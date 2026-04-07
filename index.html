@@ -68,11 +68,6 @@ button {
 
 <tbody id="tableBody"></tbody>
 
-<tr>
-<td colspan="4"><b>總實秤</b></td>
-<td id="totalResult"><b>0.00</b></td>
-</tr>
-
 </table>
 
 <button onclick="copyText()">📋 一鍵複製</button>
@@ -127,8 +122,6 @@ items.forEach((item, i) => {
 
 // 計算
 function calc() {
-    let total = 0;
-
     items.forEach((_, i) => {
         let count = parseInt(document.getElementById("count"+i).value);
         let weight = parseFloat(document.getElementById("weight"+i).value);
@@ -144,11 +137,7 @@ function calc() {
         const el = document.getElementById("result"+i);
         el.innerText = result.toFixed(2);
         el.style.color = result <= 0 ? "#999" : "green";
-
-        total += result;
     });
-
-    document.getElementById("totalResult").innerText = total.toFixed(2);
 }
 
 // Enter 跳欄位
