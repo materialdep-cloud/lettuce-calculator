@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <title>生菜重量計算</title>
-
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -13,9 +12,7 @@ body {
     background: #f5f5f5;
 }
 
-h2 {
-    text-align: center;
-}
+h2 { text-align: center; }
 
 table {
     width: 100%;
@@ -25,36 +22,64 @@ table {
 
 th, td {
     border: 1px solid #ddd;
-    padding: 10px;
+    padding: 8px;
     text-align: center;
+    word-break: break-word;
 }
 
 input {
-    width: 70px;
+    width: 100%;
     padding: 6px;
     font-size: 16px;
+    box-sizing: border-box;
 }
 
-.result {
-    font-weight: bold;
+tr.error {
+    background: #f8d7da;
+    color: #721c24;
 }
 
-.item {
-    text-align: left;
-    font-size: 16px;
+tr.done {
+    background: #d4edda;
+    color: #155724;
 }
 
-button {
+tr.error input, tr.done input {
+    background: transparent;
+    color: inherit;
+    border-color: #ccc;
+}
+
+tr.hasValue input {
+    background: #444;
+    color: #fff;
+    border-color: #666;
+}
+
+.result { font-weight: bold; }
+.item { text-align: left; }
+
+/* 懸浮按鈕 */
+.fab {
+    position: fixed;
+    right: 15px;
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    color: white;
+    border: none;
+    font-size: 20px;
     cursor: pointer;
-    margin-top: 15px;
-    padding: 10px 20px;
-    font-size: 16px;
 }
+
+#copyBtn { bottom: 80px; background: #28a745; }
+#clearBtn { bottom: 15px; background: #dc3545; }
+
+
 </style>
 </head>
 
 <body>
-
 <h2>🥬 生菜重量計算</h2>
 
 <table>
@@ -65,12 +90,12 @@ button {
 <th>苔重kg</th>
 <th>實秤kg</th>
 </tr>
-
 <tbody id="tableBody"></tbody>
-
 </table>
 
-<button onclick="copyText()">📋 一鍵複製</button>
+<!-- 懸浮按鈕 -->
+<button id="copyBtn" class="fab" onclick="copyText()">📋</button>
+<button id="clearBtn" class="fab" onclick="clearAll()">🗑️</button>
 
 <script>
 const items = [
@@ -91,70 +116,63 @@ const tbody = document.getElementById("tableBody");
 
 // 建立表格
 items.forEach((item, i) => {
-    tbody.insertAdjacentHTML("beforeend", `
-    <tr>
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
         <td class="item">${item.icon} ${item.name}</td>
-        <td>
-            <input type="number" inputmode="decimal" min="0" step="0.1"
-                   id="weight${i}" 
-                   onfocus="this.select()"
-                   oninput="calc()" 
-                   onkeydown="nextField(event, ${i})">
-        </td>
-        <td>
-            <input type="number" inputmode="numeric" min="0" step="1"
-                   id="count${i}" 
-                   onfocus="this.select()"
-                   oninput="this.value=this.value.replace(/[^0-9]/g,''); calc();" 
-                   onkeydown="nextField(event, ${i})">
-        </td>
-        <td>
-            <input type="number" inputmode="decimal" min="0" step="0.1"
-                   id="tare${i}" value="1.8"
-                   onfocus="this.select()"
-                   oninput="calc()" 
-                   onkeydown="nextField(event, ${i})">
-        </td>
+        <td><input type="number" min="0" step="0.1" id="weight${i}"></td>
+        <td><input type="number" min="0" step="1" id="count${i}"></td>
+        <td><input type="number" value="1.8" id="tare${i}" readonly></td>
         <td class="result" id="result${i}">0.00</td>
-    </tr>
-    `);
+    `;
+    tbody.appendChild(tr);
 });
 
 // 計算
 function calc() {
     items.forEach((_, i) => {
-        let count = parseInt(document.getElementById("count"+i).value);
-        let weight = parseFloat(document.getElementById("weight"+i).value);
-        let tare = parseFloat(document.getElementById("tare"+i).value);
+        let count = parseInt(document.getElementById("count"+i).value) || 0;
+        let weight = parseFloat(document.getElementById("weight"+i).value) || 0;
+        let tare = parseFloat(document.getElementById("tare"+i).value) || 0;
 
-        if (isNaN(count)) count = 0;
-        if (isNaN(weight)) weight = 0;
-        if (isNaN(tare)) tare = 0;
+        count = Math.max(0, count);
+        weight = Math.max(0, weight);
 
-        let result = weight - (tare * count);
-        if (result < 0) result = 0;
+        const row = document.getElementById("result"+i).closest("tr");
+        row.classList.remove("error","done");
 
         const el = document.getElementById("result"+i);
+
+        if (weight > 0 && count === 0) {
+            el.innerText = "⚠️";
+            el.style.color = "red";
+            row.classList.add("error");
+            return;
+        }
+
+        const result = weight - (tare * count);
+
+        if (weight < (tare * count)) {
+            el.innerText = "0.00";
+            el.style.color = "red";
+            row.classList.add("error");
+            return;
+        }
+
         el.innerText = result.toFixed(2);
-        el.style.color = result <= 0 ? "#999" : "green";
+        el.style.color = result > 0 ? "green" : "#999";
+
+        if (result > 0) row.classList.add("done");
     });
 }
 
-// Enter 跳欄位
-function nextField(e, i) {
-    if (e.key === "Enter") {
-        const activeId = document.activeElement.id;
-
-        if (activeId === "weight"+i) {
-            document.getElementById("count"+i).focus();
-        } else if (activeId === "count"+i) {
-            document.getElementById("tare"+i).focus();
-        } else {
-            const nextWeight = document.getElementById("weight"+(i+1));
-            if (nextWeight) nextWeight.focus();
+// 綁定事件
+items.forEach((_, i) => {
+    document.addEventListener("input", (e) => {
+        if (e.target.id === "weight"+i || e.target.id === "count"+i) {
+            calc();
         }
-    }
-}
+    });
+});
 
 // 複製
 function copyText() {
@@ -165,34 +183,30 @@ function copyText() {
         let weight = parseFloat(document.getElementById("weight"+i).value);
         let tare = parseFloat(document.getElementById("tare"+i).value);
 
-        if (isNaN(count) || count === 0) return;
-        if (isNaN(weight)) weight = 0;
-        if (isNaN(tare)) tare = 0;
+        if (!count) return;
 
         let result = weight - (tare * count);
         if (result < 0) result = 0;
 
         output += `${item.name}${count}件\n`;
-        output += `實秤：${weight}(總重)-${tare}(苔重)*${count}= ${result.toFixed(2)}kg\n\n`;
+        output += `實秤：${result.toFixed(2)}kg\n\n`;
     });
 
-    if (!output) {
-        alert("沒有可複製的資料");
-        return;
-    }
+    if (!output) return alert("沒有資料");
 
-    if (navigator.clipboard) {
-        navigator.clipboard.writeText(output);
-    } else {
-        const textarea = document.createElement("textarea");
-        textarea.value = output;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-    }
+    navigator.clipboard.writeText(output);
+    alert("已複製");
+}
 
-    alert("已複製！");
+// 清除（防呆）
+function clearAll() {
+    if (!confirm("確定要清除全部資料嗎？")) return;
+
+    items.forEach((_, i) => {
+        document.getElementById("weight"+i).value = "";
+        document.getElementById("count"+i).value = "";
+        document.getElementById("result"+i).innerText = "0.00";
+    });
 }
 </script>
 
