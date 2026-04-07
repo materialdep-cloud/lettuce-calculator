@@ -20,51 +20,28 @@ table {
     background: white;
 }
 
-@media (max-width: 600px) {
-    table, thead, tbody, th, td, tr {
-        display: block;
-    }
-
-    tr {
-        margin-bottom: 10px;
-        border: 1px solid #ddd;
-        padding: 5px;
-        background: #fff;
-    }
-
-    th {
-        display: none;
-    }
-
-    td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        border: none;
-        border-bottom: 1px solid #eee;
-        padding: 6px 4px;
-    }
-
-    td::before {
-        content: attr(data-label);
-        font-weight: bold;
-    }
-}
-
 th, td {
     border: 1px solid #ddd;
     padding: 8px;
     text-align: center;
-    word-break: break-word;
 }
 
 input {
     width: 100%;
     padding: 6px;
-    font-size: 16px;
+    font-size: 18px;
     box-sizing: border-box;
 }
 
+.item {
+    text-align: left;
+}
+
+.result {
+    font-weight: bold;
+}
+
+/* 狀態 */
 tr.error {
     background: #f8d7da;
     color: #721c24;
@@ -75,21 +52,6 @@ tr.done {
     color: #155724;
 }
 
-tr.error input, tr.done input {
-    background: transparent;
-    color: inherit;
-    border-color: #ccc;
-}
-
-tr.hasValue input {
-    background: #444;
-    color: #fff;
-    border-color: #666;
-}
-
-.result { font-weight: bold; }
-.item { text-align: left; }
-
 /* 懸浮按鈕 */
 .fab {
     position: fixed;
@@ -99,21 +61,20 @@ tr.hasValue input {
     border-radius: 50%;
     color: white;
     border: none;
-    font-size: 20px;
-    cursor: pointer;
+    font-size: 22px;
 }
 
 #copyBtn { bottom: 80px; background: #28a745; }
 #clearBtn { bottom: 15px; background: #dc3545; }
-
-
 </style>
 </head>
 
 <body>
+
 <h2>🥬 生菜重量計算</h2>
 
 <table>
+<thead>
 <tr>
 <th>品項</th>
 <th>總重kg</th>
@@ -121,10 +82,10 @@ tr.hasValue input {
 <th>苔重kg</th>
 <th>實秤kg</th>
 </tr>
+</thead>
 <tbody id="tableBody"></tbody>
 </table>
 
-<!-- 懸浮按鈕 -->
 <button id="copyBtn" class="fab" onclick="copyText()">📋</button>
 <button id="clearBtn" class="fab" onclick="clearAll()">🗑️</button>
 
@@ -145,33 +106,35 @@ const items = [
 
 const tbody = document.getElementById("tableBody");
 
-// 建立表格
+// 建表格
 items.forEach((item, i) => {
     const tr = document.createElement("tr");
-    tr.innerHTML = `
-        <td class="item" data-label="品項">${item.icon} ${item.name}</td>
-        <td data-label="總重kg"><input type="number" min="0" step="0.1" id="weight${i}"></td>
-        <td data-label="件數"><input type="number" min="0" step="1" id="count${i}"></td>
-        <td data-label="苔重kg"><input type="number" value="1.8" id="tare${i}" readonly></td>
-        <td class="result" data-label="實秤kg" id="result${i}">0.00</td>
-    `;
+
+    tr.innerHTML =
+        '<td class="item">'+item.icon+' '+item.name+'</td>' +
+        '<td><input type="number" min="0" step="0.1" id="weight'+i+'"></td>' +
+        '<td><input type="number" min="0" step="1" id="count'+i+'"></td>' +
+        '<td><input type="number" value="1.8" id="tare'+i+'" readonly></td>' +
+        '<td class="result" id="result'+i+'">0.00</td>';
+
     tbody.appendChild(tr);
 });
+
+// 監聽
+document.addEventListener("input", calc);
 
 // 計算
 function calc() {
     items.forEach((_, i) => {
+
         let count = parseInt(document.getElementById("count"+i).value) || 0;
         let weight = parseFloat(document.getElementById("weight"+i).value) || 0;
         let tare = parseFloat(document.getElementById("tare"+i).value) || 0;
 
-        count = Math.max(0, count);
-        weight = Math.max(0, weight);
-
-        const row = document.getElementById("result"+i).closest("tr");
-        row.classList.remove("error","done");
-
+        const row = document.getElementById("result"+i).parentNode.parentNode;
         const el = document.getElementById("result"+i);
+
+        row.classList.remove("error","done");
 
         if (weight > 0 && count === 0) {
             el.innerText = "⚠️";
@@ -180,7 +143,7 @@ function calc() {
             return;
         }
 
-        const result = weight - (tare * count);
+        let result = weight - (tare * count);
 
         if (weight < (tare * count)) {
             el.innerText = "0.00";
@@ -196,15 +159,6 @@ function calc() {
     });
 }
 
-// 綁定事件
-items.forEach((_, i) => {
-    document.addEventListener("input", (e) => {
-        if (e.target.id === "weight"+i || e.target.id === "count"+i) {
-            calc();
-        }
-    });
-});
-
 // 複製
 function copyText() {
     let output = "";
@@ -219,20 +173,20 @@ function copyText() {
         let result = weight - (tare * count);
         if (result < 0) result = 0;
 
-        output += `${item.name}${count}件
-`;
-        output += `實秤：${result.toFixed(2)}kg
-
-`;
+        output += item.name + count + "件\n";
+        output += "實秤：" + result.toFixed(2) + "kg\n\n";
     });
 
-    if (!output) return alert("沒有資料");
+    if (!output) {
+        alert("沒有資料");
+        return;
+    }
 
     navigator.clipboard.writeText(output);
     alert("已複製");
 }
 
-// 清除（防呆）
+// 清除
 function clearAll() {
     if (!confirm("確定要清除全部資料嗎？")) return;
 
