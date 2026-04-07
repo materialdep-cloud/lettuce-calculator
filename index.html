@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>生菜重量計算</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=0.8, shrink-to-fit=no">
 
     <style>
         body {
@@ -11,22 +11,28 @@
             padding: 10px;
             background: #f5f5f5;
             margin-bottom: 100px;
+            /* 防止 body 限制寬度 */
+            min-width: fit-content;
         }
 
         h2 { text-align: center; color: #2e7d32; margin-bottom: 15px; }
 
         table {
-            width: 100%;
-            border-collapse: collapse;
             background: white;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-collapse: collapse;
+            /* 關鍵：不使用 width: 100%，改用 auto 讓內容撐開寬度 */
+            width: auto; 
+            min-width: 100%;
             table-layout: auto; 
         }
 
         th, td {
             border: 1px solid #ddd;
-            padding: 12px 4px;
+            padding: 12px 8px; /* 稍微加大間距，避免擠在一起 */
             text-align: center;
+            /* 確保所有格子都不縮排 */
+            white-space: nowrap; 
         }
 
         th { 
@@ -34,18 +40,16 @@
             font-size: 18px; 
             font-weight: bold;
             color: #333;
-            white-space: nowrap;
         }
 
         input {
-            width: 100%;
+            width: 80px; /* 固定輸入框寬度，防止手機版變形 */
             padding: 10px 2px;
             font-size: 18px; 
             box-sizing: border-box;
             border: 1px solid #ccc;
             border-radius: 4px;
             text-align: center;
-            background: #fff;
         }
 
         .item {
@@ -53,8 +57,8 @@
             font-size: 19px; 
             font-weight: bold;
             padding-left: 8px;
-            white-space: nowrap;
-            width: 1%; 
+            /* 品項欄位絕對不換行 */
+            white-space: nowrap; 
         }
 
         .result {
@@ -91,7 +95,6 @@
 
         #copyBtn { bottom: 100px; background: #28a745; }
         #clearBtn { bottom: 20px; background: #dc3545; }
-        .fab:active { transform: scale(0.9); }
     </style>
 </head>
 
@@ -196,7 +199,6 @@ function copyText() {
             let totalTare = (TARE_VALUE * count).toFixed(2);
             let result = (weight - totalTare).toFixed(2);
             
-            // 複製時僅顯示名稱，不包含 icon
             output += `${item.name}：${count}件\n`;
             output += `計算：${weight} - (${TARE_VALUE}×${count}) = ${result}kg\n`;
             output += `實秤：${result}kg\n\n`;
