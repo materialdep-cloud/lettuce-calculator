@@ -17,6 +17,11 @@ h2 {
     text-align: center;
 }
 
+.control {
+    text-align: center;
+    margin-bottom: 10px;
+}
+
 table {
     width: 100%;
     border-collapse: collapse;
@@ -37,7 +42,6 @@ input {
 
 .result {
     font-weight: bold;
-    color: green;
 }
 
 .item {
@@ -58,6 +62,11 @@ button {
 
 <h2>🥬 生菜重量計算</h2>
 
+<div class="control">
+    苔重設定：
+    <input type="number" id="tare" value="1.8" step="0.1" inputmode="decimal" oninput="calc()"> kg
+</div>
+
 <table>
 <tr>
 <th>品項</th>
@@ -67,6 +76,12 @@ button {
 </tr>
 
 <tbody id="tableBody"></tbody>
+
+<tr>
+<td colspan="3"><b>總實秤</b></td>
+<td id="totalResult"><b>0.00</b></td>
+</tr>
+
 </table>
 
 <button onclick="copyText()">📋 一鍵複製</button>
@@ -86,26 +101,37 @@ const items = [
 {name:"歐芹", icon:"🌿"}
 ];
 
-// 建立表格
 const tbody = document.getElementById("tableBody");
 
+// 建立表格（優化效能）
 items.forEach((item, i) => {
-    tbody.innerHTML += `
+    tbody.insertAdjacentHTML("beforeend", `
     <tr>
         <td class="item">${item.icon} ${item.name}</td>
-        <td><input type="number" min="0" step="0.1" id="weight${i}" oninput="calc()" onkeydown="nextField(event, ${i})"></td>
         <td>
-            <input type="number" min="0" step="1" id="count${i}" 
+            <input type="number" inputmode="decimal" min="0" step="0.1"
+                   id="weight${i}" 
+                   onfocus="this.select()"
+                   oninput="calc()" 
+                   onkeydown="nextField(event, ${i})">
+        </td>
+        <td>
+            <input type="number" inputmode="numeric" min="0" step="1"
+                   id="count${i}" 
+                   onfocus="this.select()"
                    oninput="this.value=this.value.replace(/[^0-9]/g,''); calc();" 
                    onkeydown="nextField(event, ${i})">
         </td>
         <td class="result" id="result${i}">0.00</td>
     </tr>
-    `;
+    `);
 });
 
 // 計算
 function calc() {
+    const tareWeight = parseFloat(document.getElementById("tare").value) || 0;
+    let total = 0;
+
     items.forEach((_, i) => {
         let count = parseInt(document.getElementById("count"+i).value);
         let weight = parseFloat(document.getElementById("weight"+i).value);
@@ -113,19 +139,26 @@ function calc() {
         if (isNaN(count)) count = 0;
         if (isNaN(weight)) weight = 0;
 
-        let result = weight - (1.8 * count);
+        let result = weight - (tareWeight * count);
         if (result < 0) result = 0;
 
         const el = document.getElementById("result"+i);
         el.innerText = result.toFixed(2);
-        el.style.color = result === 0 ? "red" : "green";
+
+        // 顏色優化（UX）
+        el.style.color = result <= 0 ? "#999" : "green";
+
+        total += result;
     });
+
+    document.getElementById("totalResult").innerText = total.toFixed(2);
 }
 
 // Enter 跳欄位
 function nextField(e, i) {
     if (e.key === "Enter") {
         const activeId = document.activeElement.id;
+
         if (activeId === "weight"+i) {
             document.getElementById("count"+i).focus();
         } else {
@@ -135,8 +168,9 @@ function nextField(e, i) {
     }
 }
 
-// 一鍵複製報表
+// 複製（強化版）
 function copyText() {
+    const tareWeight = parseFloat(document.getElementById("tare").value) || 0;
     let output = "";
 
     items.forEach((item, i) => {
@@ -146,14 +180,29 @@ function copyText() {
         if (isNaN(count) || count === 0) return;
         if (isNaN(weight)) weight = 0;
 
-        let result = weight - (1.8 * count);
+        let result = weight - (tareWeight * count);
         if (result < 0) result = 0;
 
         output += `${item.name}${count}件\n`;
-        output += `實秤：${weight}(總重)-1.8(苔重)*${count}= ${result.toFixed(2)}kg\n\n`;
+        output += `實秤：${weight}(總重)-${tareWeight}(苔重)*${count}= ${result.toFixed(2)}kg\n\n`;
     });
 
-    navigator.clipboard.writeText(output);
+    if (!output) {
+        alert("沒有可複製的資料");
+        return;
+    }
+
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(output);
+    } else {
+        const textarea = document.createElement("textarea");
+        textarea.value = output;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textarea);
+    }
+
     alert("已複製！");
 }
 </script>
