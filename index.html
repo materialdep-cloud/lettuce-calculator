@@ -17,11 +17,6 @@ h2 {
     text-align: center;
 }
 
-.control {
-    text-align: center;
-    margin-bottom: 10px;
-}
-
 table {
     width: 100%;
     border-collapse: collapse;
@@ -35,7 +30,7 @@ th, td {
 }
 
 input {
-    width: 80px;
+    width: 70px;
     padding: 6px;
     font-size: 16px;
 }
@@ -62,23 +57,19 @@ button {
 
 <h2>🥬 生菜重量計算</h2>
 
-<div class="control">
-    苔重設定：
-    <input type="number" id="tare" value="1.8" step="0.1" inputmode="decimal" oninput="calc()"> kg
-</div>
-
 <table>
 <tr>
 <th>品項</th>
 <th>總重kg</th>
 <th>件數</th>
+<th>苔重kg</th>
 <th>實秤kg</th>
 </tr>
 
 <tbody id="tableBody"></tbody>
 
 <tr>
-<td colspan="3"><b>總實秤</b></td>
+<td colspan="4"><b>總實秤</b></td>
 <td id="totalResult"><b>0.00</b></td>
 </tr>
 
@@ -103,7 +94,7 @@ const items = [
 
 const tbody = document.getElementById("tableBody");
 
-// 建立表格（優化效能）
+// 建立表格
 items.forEach((item, i) => {
     tbody.insertAdjacentHTML("beforeend", `
     <tr>
@@ -122,6 +113,13 @@ items.forEach((item, i) => {
                    oninput="this.value=this.value.replace(/[^0-9]/g,''); calc();" 
                    onkeydown="nextField(event, ${i})">
         </td>
+        <td>
+            <input type="number" inputmode="decimal" min="0" step="0.1"
+                   id="tare${i}" value="1.8"
+                   onfocus="this.select()"
+                   oninput="calc()" 
+                   onkeydown="nextField(event, ${i})">
+        </td>
         <td class="result" id="result${i}">0.00</td>
     </tr>
     `);
@@ -129,23 +127,22 @@ items.forEach((item, i) => {
 
 // 計算
 function calc() {
-    const tareWeight = parseFloat(document.getElementById("tare").value) || 0;
     let total = 0;
 
     items.forEach((_, i) => {
         let count = parseInt(document.getElementById("count"+i).value);
         let weight = parseFloat(document.getElementById("weight"+i).value);
+        let tare = parseFloat(document.getElementById("tare"+i).value);
 
         if (isNaN(count)) count = 0;
         if (isNaN(weight)) weight = 0;
+        if (isNaN(tare)) tare = 0;
 
-        let result = weight - (tareWeight * count);
+        let result = weight - (tare * count);
         if (result < 0) result = 0;
 
         const el = document.getElementById("result"+i);
         el.innerText = result.toFixed(2);
-
-        // 顏色優化（UX）
         el.style.color = result <= 0 ? "#999" : "green";
 
         total += result;
@@ -161,6 +158,8 @@ function nextField(e, i) {
 
         if (activeId === "weight"+i) {
             document.getElementById("count"+i).focus();
+        } else if (activeId === "count"+i) {
+            document.getElementById("tare"+i).focus();
         } else {
             const nextWeight = document.getElementById("weight"+(i+1));
             if (nextWeight) nextWeight.focus();
@@ -168,23 +167,24 @@ function nextField(e, i) {
     }
 }
 
-// 複製（強化版）
+// 複製
 function copyText() {
-    const tareWeight = parseFloat(document.getElementById("tare").value) || 0;
     let output = "";
 
     items.forEach((item, i) => {
         let count = parseInt(document.getElementById("count"+i).value);
         let weight = parseFloat(document.getElementById("weight"+i).value);
+        let tare = parseFloat(document.getElementById("tare"+i).value);
 
         if (isNaN(count) || count === 0) return;
         if (isNaN(weight)) weight = 0;
+        if (isNaN(tare)) tare = 0;
 
-        let result = weight - (tareWeight * count);
+        let result = weight - (tare * count);
         if (result < 0) result = 0;
 
         output += `${item.name}${count}件\n`;
-        output += `實秤：${weight}(總重)-${tareWeight}(苔重)*${count}= ${result.toFixed(2)}kg\n\n`;
+        output += `實秤：${weight}(總重)-${tare}(苔重)*${count}= ${result.toFixed(2)}kg\n\n`;
     });
 
     if (!output) {
