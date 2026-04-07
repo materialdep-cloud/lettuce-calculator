@@ -20,6 +20,37 @@ table {
     background: white;
 }
 
+@media (max-width: 600px) {
+    table, thead, tbody, th, td, tr {
+        display: block;
+    }
+
+    tr {
+        margin-bottom: 10px;
+        border: 1px solid #ddd;
+        padding: 5px;
+        background: #fff;
+    }
+
+    th {
+        display: none;
+    }
+
+    td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border: none;
+        border-bottom: 1px solid #eee;
+        padding: 6px 4px;
+    }
+
+    td::before {
+        content: attr(data-label);
+        font-weight: bold;
+    }
+}
+
 th, td {
     border: 1px solid #ddd;
     padding: 8px;
@@ -118,11 +149,11 @@ const tbody = document.getElementById("tableBody");
 items.forEach((item, i) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
-        <td class="item">${item.icon} ${item.name}</td>
-        <td><input type="number" min="0" step="0.1" id="weight${i}"></td>
-        <td><input type="number" min="0" step="1" id="count${i}"></td>
-        <td><input type="number" value="1.8" id="tare${i}" readonly></td>
-        <td class="result" id="result${i}">0.00</td>
+        <td class="item" data-label="品項">${item.icon} ${item.name}</td>
+        <td data-label="總重kg"><input type="number" min="0" step="0.1" id="weight${i}"></td>
+        <td data-label="件數"><input type="number" min="0" step="1" id="count${i}"></td>
+        <td data-label="苔重kg"><input type="number" value="1.8" id="tare${i}" readonly></td>
+        <td class="result" data-label="實秤kg" id="result${i}">0.00</td>
     `;
     tbody.appendChild(tr);
 });
@@ -188,8 +219,11 @@ function copyText() {
         let result = weight - (tare * count);
         if (result < 0) result = 0;
 
-        output += `${item.name}${count}件\n`;
-        output += `實秤：${result.toFixed(2)}kg\n\n`;
+        output += `${item.name}${count}件
+`;
+        output += `實秤：${result.toFixed(2)}kg
+
+`;
     });
 
     if (!output) return alert("沒有資料");
