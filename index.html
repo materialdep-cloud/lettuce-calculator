@@ -11,7 +11,6 @@
             padding: 10px;
             background: #f5f5f5;
             margin-bottom: 100px;
-            /* 防止 body 限制寬度 */
             min-width: fit-content;
         }
 
@@ -21,7 +20,6 @@
             background: white;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             border-collapse: collapse;
-            /* 關鍵：不使用 width: 100%，改用 auto 讓內容撐開寬度 */
             width: auto; 
             min-width: 100%;
             table-layout: auto; 
@@ -29,9 +27,8 @@
 
         th, td {
             border: 1px solid #ddd;
-            padding: 12px 8px; /* 稍微加大間距，避免擠在一起 */
+            padding: 12px 8px;
             text-align: center;
-            /* 確保所有格子都不縮排 */
             white-space: nowrap; 
         }
 
@@ -43,7 +40,7 @@
         }
 
         input {
-            width: 80px; /* 固定輸入框寬度，防止手機版變形 */
+            width: 80px;
             padding: 10px 2px;
             font-size: 18px; 
             box-sizing: border-box;
@@ -57,7 +54,6 @@
             font-size: 19px; 
             font-weight: bold;
             padding-left: 8px;
-            /* 品項欄位絕對不換行 */
             white-space: nowrap; 
         }
 
@@ -119,6 +115,8 @@
 <button id="clearBtn" class="fab" onclick="clearAll()">🗑️</button>
 
 <script>
+const STORAGE_KEY = "lettuce_data_v1";
+
 const items = [
     {name:"紅捲生菜", icon:"🔴🥬"},
     {name:"綠捲生菜", icon:"🟢🥬"},
@@ -182,6 +180,30 @@ function calc() {
             row.classList.add("error");
         }
     });
+
+    saveData(); // ⭐自動保存
+}
+
+function saveData() {
+    let data = items.map((_, i) => ({
+        weight: document.getElementById("weight"+i).value,
+        count: document.getElementById("count"+i).value
+    }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function loadData() {
+    let saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return;
+
+    let data = JSON.parse(saved);
+    data.forEach((d, i) => {
+        if (!d) return;
+        document.getElementById("weight"+i).value = d.weight || "";
+        document.getElementById("count"+i).value = d.count || "";
+    });
+
+    calc();
 }
 
 function copyText() {
@@ -215,13 +237,19 @@ function copyText() {
 
 function clearAll() {
     if (!confirm("確定要全部清除嗎？")) return;
+
     items.forEach((_, i) => {
         document.getElementById("weight"+i).value = "";
         document.getElementById("count"+i).value = "";
         document.getElementById("result"+i).innerText = "0.00";
         document.getElementById("result"+i).closest("tr").classList.remove("error","done");
     });
+
+    localStorage.removeItem(STORAGE_KEY); // ⭐一起清掉
 }
+
+// ⭐頁面載入時自動還原
+loadData();
 </script>
 
 </body>
